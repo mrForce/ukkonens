@@ -20,11 +20,29 @@ public class Main {
 		}
 		int length = s.length();
 		
-		Node x_alpha_node = null;
-		for(int i = 0; i < length - 1; i++) {
+		PathEnd x_alpha_end = null;
+		for(int i = 1; i < length - 1; i++) {
+			char next_char = s.charAt(i);
 			for(int j = 0; j < i + 1; j++) {
-				char next_char = s.charAt(i + 1);
-				String alpha = s.substring(j, i + 1);
+				String alpha = s.substring(j, i);
+				System.out.println(alpha);
+				if(alpha.equals("ab")) {
+					System.out.println("hi");
+				}
+				if(tree.getRoot().getOutEdges().containsKey("axabb")) {
+					System.out.println("Hello");
+				}
+				if(alpha.length() == 0) {
+					if(!tree.getRoot().hasOutEdgeStartsWith(next_char)) {
+						try {
+							tree.getRoot().add_leaf(Character.toString(next_char));
+						} catch (OverwriteEdgeException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					continue;
+				}
 				if(j == 0) {
 					try {
 						tree.suffixExtendRuleOne(tree.getFullLeaf(), next_char);
@@ -33,19 +51,30 @@ public class Main {
 					} catch (NotLeafException e) {
 						System.out.println("Not leaf exception in extension  " + Integer.toString(j) + " of phase: " + Integer.toString(i));
 					}
-					x_alpha_node = tree.getFullLeaf();
+					x_alpha_end = new PathEnd(tree.getFullLeaf());
 				} else if (j == 1) {
+					Node x_alpha_node = x_alpha_end.getEndNode();
 					String parent_edge_label = x_alpha_node.getParentEdgeLabel();
 					Node parent = x_alpha_node.getParent();
+					PathEnd end = null;
 					if(parent.hasSuffixLink()) {
 						Node link = parent.getSuffixLink();
-						PathEnd end = null;
 						try {
 							end = link.traversePath(parent_edge_label);
 						} catch (NoSuchEdgeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
+					} else if(parent.getType() == NodeType.ROOT){
+						try {
+							 end = parent.traversePath(alpha);
+						} catch (NoSuchEdgeException e) {
+							e.printStackTrace();
+							
+						}
+					} else {
+						System.out.println("Problem! Parent is not root, and doesn't have a suffix link");
+					}
 						if(end.getType() == PathEndType.NODE) {
 							Node end_node = end.getEndNode();
 							x_alpha_node = end_node;
@@ -61,29 +90,20 @@ public class Main {
 								}
 							}else {
 								/* Then path ends at internal node */
-								boolean extend = true;
-								for (HashMap.Entry<String, Node> entry : end_node.getOutEdges().entrySet()) {
-									if(entry.getKey().startsWith(Character.toString(next_char))) {
-										extend = false;
-										break;
-									}
-								}
-								if(extend) {
-									try {
-										x_alpha_node = tree.suffixExtendRuleTwo(end, next_char);
-									} catch (EdgeDoesNotExistException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									} catch (OverwriteEdgeException e) {
-										// TODO Auto-generated catch block
-										e.printStackTrace();
-									}
+								try {
+									x_alpha_end = tree.extend(x_alpha_end, next_char);
+								} catch (NotLeafException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								} catch (OverwriteEdgeException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
 								}
 							}
 						} else if(end.getType() == PathEndType.EDGE){
 							if(!end.getEndNode().getParentEdgeLabel().startsWith(end.getFragment() + Character.toString(next_char))) {
 								try {
-									x_alpha_node = tree.suffixExtendRuleTwo(end, next_char);
+									x_alpha_end = tree.suffixExtendRuleTwo(end, next_char);
 								} catch (EdgeDoesNotExistException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -93,28 +113,25 @@ public class Main {
 								}
 							}
 						}
-					} else {
-						System.out.println("Problem! The parent doesn't have a suffix link");
-					}
+					
 				} else {
-					Node link = null;
-					if(x_alpha_node.hasSuffixLink()) {
-						link = x_alpha_node.getSuffixLink();
-					}else if(x_alpha_node.getParent().getType() == NodeType.ROOT){
-						Node root = x_alpha_node.getParent();
-						PathEnd path = null;
-						try {
-							path = root.traversePath(alpha);
-						} catch (NoSuchEdgeException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						//do extension here
-					} else if(x_alpha_node.getParent().hasSuffixLink()){
-						
-					}else {
-						System.out.println("Sorry, the parent doesn't have a link");
-						return;
+					try {
+						x_alpha_end = tree.singleExtension(x_alpha_end, alpha, next_char);
+					} catch (NotLeafException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (OverwriteEdgeException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (NoSuchEdgeException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (MissingSuffixLinkException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (SingleExtensionFailedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 				}
 			}

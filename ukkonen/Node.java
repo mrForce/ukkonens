@@ -14,20 +14,32 @@ public class Node {
 		//create root
 		setType(NodeType.ROOT);
 		this.has_suffix_link = false;
-		
+		this.out_edges = new HashMap<String, Node>();
 	}
 	Node(NodeType type, Node parent, String parent_edge_label){
 		 setType(type);
 		 setParent(parent);
 		 setParentEdgeLabel(parent_edge_label);
 		 this.has_suffix_link = false;
+		 this.out_edges = new HashMap<String, Node>();
 	}
-	public void add_leaf(String s) throws OverwriteEdgeException {
+	
+	public boolean hasOutEdgeStartsWith(char c) {
+		String cs = Character.toString(c);
+		for (HashMap.Entry<String, Node> entry : getOutEdges().entrySet()) {
+			if(entry.getKey().startsWith(cs)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	public Node add_leaf(String s) throws OverwriteEdgeException {
 		if(this.out_edges.containsKey(s)) {
 			throw new OverwriteEdgeException(s);
 		}else {
 			Node leaf = new Node(NodeType.LEAF, this, s);
 			this.out_edges.put(s, leaf);
+			return leaf;
 		}
 	}
 	public Node getSuffixLink() {
