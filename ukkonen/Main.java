@@ -1,6 +1,7 @@
 package ukkonen;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
@@ -50,7 +51,7 @@ public class Main {
 					} catch (OverwriteEdgeException e) {
 						System.out.println("Overwriting edge in extension " + Integer.toString(j) + " of phase: " + Integer.toString(i));
 					} catch (NotLeafException e) {
-						System.out.println("Not leaf exception in extension  " + Integer.toString(j) + " of phase: " + Integer.toString(i));
+						System.out.println("NotLeafException in extension  " + Integer.toString(j) + " of phase: " + Integer.toString(i));
 					}
 					//the path actually ends at 
 					x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
@@ -142,6 +143,30 @@ public class Main {
 			}
 		}
 		System.out.println("done");
+		System.out.println(getTreeString(tree));
+	}
+	public static String DFSPrint(Node parent, Counter counter) {
+		String string = "";
+		String parent_name = Integer.toString(counter.counter);
+		counter.counter++;
+		for(Edge edge : parent.getOutEdges().values()) {
+			Node child = edge.child_node;
+			String label = edge.edge_label;
+			string += "L" + parent_name + " -> " + "L" + Integer.toString(counter.counter) + " [ label = \"" + label + "\" ];\n";
+			string += DFSPrint(child, counter);
+			counter.counter++;
+		}
+		return string;
+		
+	}
+	public static String getTreeString(ImplicitSuffixTree tree) {
+		//yes, I know, StringBuilder is better. But the trees here aren't big enough for that to become a concern (this is only a prototype)
+		String string = "";
+		string += "digraph tree {";
+		Node root = tree.getRoot();
+		string += DFSPrint(root, new Counter());
+		string += "\n}";
+		return string;
 	}
 
 }

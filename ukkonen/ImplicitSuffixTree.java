@@ -37,22 +37,15 @@ public class ImplicitSuffixTree {
 					throw new NotLeafException();
 				}
 				String edge_label = leaf.getParentEdgeLabel();
-				parent.getOutEdges().remove(edge_label);
+				parent.getOutEdges().remove(edge_label.charAt(0));
 				parent.addOutEdge(edge_label + next_char, leaf);
 				leaf.setParentEdgeLabel(edge_label + next_char);
 				
 				return new PathEnd(leaf, edge_label);
 			} else if(path_end.getEndNode().getType() == NodeType.INTERNAL) {
 				//then it ends on an internal node.
-				boolean extend = true;
 				Node end_node = path_end.getEndNode();
-				for (HashMap.Entry<String, Node> entry : end_node.getOutEdges().entrySet()) {
-					if(entry.getKey().startsWith(Character.toString(next_char))) {
-						extend = false;
-						break;
-					}
-				}
-				if(extend) {
+				if(!end_node.hasOutEdgeStartsWith(next_char)) {
 					end_node.add_leaf(Character.toString(next_char));
 				}
 				return path_end;
@@ -64,7 +57,7 @@ public class ImplicitSuffixTree {
 			if(!end_node.getParentEdgeLabel().startsWith(fragment + Character.toString(next_char))) {
 				Node middle_node = new Node(NodeType.INTERNAL, end_node.getParent(), path_end.getFragment());
 				middle_node.add_leaf(Character.toString(next_char));
-				parent_node.getOutEdges().remove(end_node.getParentEdgeLabel());
+				parent_node.getOutEdges().remove(end_node.getParentEdgeLabel().charAt(0));
 				parent_node.addOutEdge(fragment, middle_node);
 				end_node.setParent(middle_node);
 				
@@ -140,7 +133,7 @@ public class ImplicitSuffixTree {
 			throw new NotLeafException();
 		}
 		String edge_label = leaf.getParentEdgeLabel();
-		parent.getOutEdges().remove(edge_label);
+		parent.getOutEdges().remove(edge_label.charAt(0));
 		parent.addOutEdge(edge_label + next_char, leaf);
 		leaf.setParentEdgeLabel(edge_label + next_char);
 	}
@@ -165,8 +158,8 @@ public class ImplicitSuffixTree {
 				String suffix = end_node.getParentEdgeLabel().substring(beta.length());
 				Node new_internal = new Node(NodeType.INTERNAL, end_node.getParent(), beta);
 				new_internal.setParent(parent);
-				parent.getOutEdges().put(beta, new_internal);
-				if(parent.getOutEdges().remove(parent_edge_label) == null) {
+				parent.addOutEdge(beta, new_internal);
+				if(parent.getOutEdges().remove(parent_edge_label.charAt(0)) == null) {
 					throw new EdgeDoesNotExistException();
 				}else {
 					new_internal.addOutEdge(suffix, end_node);
