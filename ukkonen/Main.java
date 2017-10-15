@@ -30,13 +30,10 @@ public class Main {
 				if(alpha.equals("x") && next_char == 'c') {
 					System.out.println("hi");
 				}
-				if(tree.getRoot().getOutEdges().containsKey("axabb")) {
-					System.out.println("Hello");
-				}
 				if(alpha.length() == 0) {
 					if(!tree.getRoot().hasOutEdgeStartsWith(next_char)) {
 						try {
-							tree.getRoot().add_leaf(Character.toString(next_char));
+							tree.getRoot().add_leaf(new SubString(s, i, i + 1));
 						} catch (OverwriteEdgeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -45,7 +42,7 @@ public class Main {
 					continue;
 				}
 				if(j == 0) {
-					String gamma = tree.getFullLeaf().getParentEdgeLabel();
+					String gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
 					try {
 						tree.suffixExtendRuleOne(tree.getFullLeaf(), next_char);
 					} catch (OverwriteEdgeException e) {
@@ -80,6 +77,16 @@ public class Main {
 					} else {
 						System.out.println("Problem! Parent is not root, and doesn't have a suffix link");
 					}
+					try {
+						tree.extend(end, next_char, i);
+					} catch (NotLeafException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (OverwriteEdgeException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					/*
 						if(end.getType() == PathEndType.NODE) {
 							Node end_node = end.getEndNode();
 							x_alpha_node = end_node;
@@ -94,10 +101,10 @@ public class Main {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
 								}
-							}else {
+							}else {*/
 								/* Then path ends at internal node */
-								try {
-									x_alpha_end = tree.extend(x_alpha_end, next_char);
+								/*try {
+									x_alpha_end = tree.extend(x_alpha_end, next_char, j);
 								} catch (NotLeafException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -118,11 +125,12 @@ public class Main {
 									e.printStackTrace();
 								}
 							}
-						}
+						}*/
+						
 					
 				} else {
 					try {
-						x_alpha_end = tree.singleExtension(x_alpha_end, alpha, next_char);
+						x_alpha_end = tree.singleExtension(x_alpha_end, alpha, next_char, i);
 					} catch (NotLeafException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -151,7 +159,7 @@ public class Main {
 		counter.counter++;
 		for(Edge edge : parent.getOutEdges().values()) {
 			Node child = edge.child_node;
-			String label = edge.edge_label;
+			String label = edge.edge_label.toString();
 			string += "L" + parent_name + " -> " + "L" + Integer.toString(counter.counter) + " [ label = \"" + label + "\" ];\n";
 			string += DFSPrint(child, counter);
 			counter.counter++;

@@ -8,7 +8,7 @@ public class Node {
 	private boolean has_suffix_link;
 	private HashMap<Character, Edge> out_edges;
 	private NodeType type;
-	private String parent_edge_label;
+	private SubString parent_edge_label;
 	private Node parent;
 	Node(){
 		//create root
@@ -16,7 +16,7 @@ public class Node {
 		this.has_suffix_link = false;
 		this.out_edges = new HashMap<Character, Edge>();
 	}
-	Node(NodeType type, Node parent, String parent_edge_label){
+	Node(NodeType type, Node parent, SubString parent_edge_label){
 		 setType(type);
 		 setParent(parent);
 		 setParentEdgeLabel(parent_edge_label);
@@ -31,8 +31,8 @@ public class Node {
 			return false;
 		}
 	}
-	public Node add_leaf(String s) throws OverwriteEdgeException {
-		if(this.out_edges.containsKey(s)) {
+	public Node add_leaf(SubString s) throws OverwriteEdgeException {
+		if(this.out_edges.containsKey(s.charAt(0))) {
 			throw new OverwriteEdgeException(s);
 		}else {
 			Node leaf = new Node(NodeType.LEAF, this, s);
@@ -60,7 +60,7 @@ public class Node {
 	public void setType(NodeType type) {
 		this.type = type;
 	}
-	public void addOutEdge(String string, Node child) throws OverwriteEdgeException {
+	public void addOutEdge(SubString string, Node child) throws OverwriteEdgeException {
 		if(this.hasOutEdgeStartsWith(string.charAt(0))) {
 			throw new OverwriteEdgeException(string);
 		}else {
@@ -68,10 +68,10 @@ public class Node {
 			this.out_edges.put(string.charAt(0), edge);
 		}
 	}
-	public String getParentEdgeLabel() {
+	public SubString getParentEdgeLabel() {
 		return parent_edge_label;
 	}
-	public void setParentEdgeLabel(String parent_edge_label) {
+	public void setParentEdgeLabel(SubString parent_edge_label) {
 		this.parent_edge_label = parent_edge_label;
 	}
 	public Node getParent() {
