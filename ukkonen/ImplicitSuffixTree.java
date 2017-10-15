@@ -5,10 +5,13 @@ import java.util.HashMap;
 public class ImplicitSuffixTree {
 	private Node root;
 	private Node full_leaf;
-	
+	private boolean need_suffix_link;
+	private Node node_that_needs_suffix_link;
 	ImplicitSuffixTree(){
 		Node root = new Node();
 		this.setRoot(root);
+		this.need_suffix_link = false;
+		this.node_that_needs_suffix_link = null;
 	}
 	static ImplicitSuffixTree firstTree(String s) throws OverwriteEdgeException {
 		ImplicitSuffixTree tree = new ImplicitSuffixTree();
@@ -38,7 +41,7 @@ public class ImplicitSuffixTree {
 				parent.addOutEdge(edge_label + next_char, leaf);
 				leaf.setParentEdgeLabel(edge_label + next_char);
 				
-				return path_end;
+				return new PathEnd(leaf, edge_label);
 			} else if(path_end.getEndNode().getType() == NodeType.INTERNAL) {
 				//then it ends on an internal node.
 				boolean extend = true;
@@ -67,6 +70,14 @@ public class ImplicitSuffixTree {
 				
 				end_node.setParentEdgeLabel(end_node.getParentEdgeLabel().substring(fragment.length()));
 				middle_node.addOutEdge(end_node.getParentEdgeLabel(), end_node);
+				if(parent_node.getType() == NodeType.ROOT && middle_node.getParentEdgeLabel().length() == 1) {
+					//in this case, we need to set the root to be the suffix link
+					middle_node.setSuffixLink(parent_node);
+				}else {
+					//set the new internal node, which has path S[j-1...i], to get a suffix link to S[j...i] on the next extension.
+					this.need_suffix_link = true;
+					this.node_that_needs_suffix_link = middle_node;
+				}
 				return new PathEnd(middle_node);
 			}else {
 				//don't do anything, since the next character in the path is next_char 
@@ -81,6 +92,11 @@ public class ImplicitSuffixTree {
 	public PathEnd singleExtension(PathEnd path_end, String alpha, char next_char) throws NotLeafException, OverwriteEdgeException, NoSuchEdgeException, MissingSuffixLinkException, SingleExtensionFailedException {
 		if(path_end.getType() == PathEndType.NODE) {
 			Node end_node = path_end.getEndNode();
+			if(this.need_suffix_link) {
+				this.node_that_needs_suffix_link.setSuffixLink(end_node);
+				this.need_suffix_link = false;
+				this.node_that_needs_suffix_link = null;
+			}
 			if(end_node.hasSuffixLink()) {
 				Node link = end_node.getSuffixLink();
 				PathEnd new_path = new PathEnd(link);
@@ -90,6 +106,12 @@ public class ImplicitSuffixTree {
 				if(parent.getType() == NodeType.ROOT) {
 					PathEnd traversed_path = parent.traversePath(alpha);
 					return this.extend(traversed_path, next_char);
+				} else if(parent.hasSuffixLink()){
+					Node link = parent.getSuffixLink();
+					String parent_edge_label = end_node.getParentEdgeLabel();
+					String gamma = parent_edge_label.substring(0, parent_edge_label.length() - 1);
+					PathEnd sv = link.traversePath(gamma);
+					return this.extend(sv, next_char);
 				}
 			}
 		}else {
@@ -97,7 +119,7 @@ public class ImplicitSuffixTree {
 			String fragment = path_end.getFragment();
 			Node parent_node = end_node.getParent();
 			if(parent_node.getType() == NodeType.ROOT) {
-				PathEnd traversed_path = parent_node.traversePath(fragment);
+				PathEnd traversed_path = parent_node.traversePath(alpha);
 				return this.extend(traversed_path, next_char);
 			}else {
 				if(parent_node.hasSuffixLink()) {

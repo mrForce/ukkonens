@@ -21,12 +21,12 @@ public class Main {
 		int length = s.length();
 		
 		PathEnd x_alpha_end = null;
-		for(int i = 1; i < length - 1; i++) {
+		for(int i = 1; i < length; i++) {
 			char next_char = s.charAt(i);
 			for(int j = 0; j < i + 1; j++) {
 				String alpha = s.substring(j, i);
 				System.out.println(alpha);
-				if(alpha.equals("ab")) {
+				if(alpha.equals("x") && next_char == 'c') {
 					System.out.println("hi");
 				}
 				if(tree.getRoot().getOutEdges().containsKey("axabb")) {
@@ -44,6 +44,7 @@ public class Main {
 					continue;
 				}
 				if(j == 0) {
+					String gamma = tree.getFullLeaf().getParentEdgeLabel();
 					try {
 						tree.suffixExtendRuleOne(tree.getFullLeaf(), next_char);
 					} catch (OverwriteEdgeException e) {
@@ -51,16 +52,19 @@ public class Main {
 					} catch (NotLeafException e) {
 						System.out.println("Not leaf exception in extension  " + Integer.toString(j) + " of phase: " + Integer.toString(i));
 					}
-					x_alpha_end = new PathEnd(tree.getFullLeaf());
+					//the path actually ends at 
+					x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
+					//x_alpha_end = new PathEnd(tree.getFullLeaf());
 				} else if (j == 1) {
 					Node x_alpha_node = x_alpha_end.getEndNode();
-					String parent_edge_label = x_alpha_node.getParentEdgeLabel();
+					String gamma = x_alpha_end.getFragment();
 					Node parent = x_alpha_node.getParent();
+					
 					PathEnd end = null;
 					if(parent.hasSuffixLink()) {
 						Node link = parent.getSuffixLink();
 						try {
-							end = link.traversePath(parent_edge_label);
+							end = link.traversePath(gamma);
 						} catch (NoSuchEdgeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -79,6 +83,7 @@ public class Main {
 							Node end_node = end.getEndNode();
 							x_alpha_node = end_node;
 							if(end_node.getType() == NodeType.LEAF) {
+								x_alpha_end = new PathEnd(end_node);
 								try {
 									tree.suffixExtendRuleOne(end_node, next_char);
 								} catch (OverwriteEdgeException e) {
@@ -136,7 +141,7 @@ public class Main {
 				}
 			}
 		}
-		
+		System.out.println("done");
 	}
 
 }
