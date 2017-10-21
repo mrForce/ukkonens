@@ -18,8 +18,9 @@ public class ImplicitSuffixTree {
 	static ImplicitSuffixTree firstTree(String s) throws OverwriteEdgeException {
 		ImplicitSuffixTree tree = new ImplicitSuffixTree(s);
 		Node root = tree.getRoot();
-		Node first_leaf = new Node(NodeType.LEAF, root, new SubString(s, 0, 1));
-		root.addOutEdge(new SubString(s, 0, 1), first_leaf);
+		SubString edge_label = new SubString(s, 0, 1);
+		Node first_leaf = new Node(NodeType.LEAF, root, edge_label);
+		root.addOutEdge(edge_label, first_leaf);
 		tree.setFullLeaf(first_leaf);
 		return tree;
 	}
@@ -43,7 +44,6 @@ public class ImplicitSuffixTree {
 				String edge_label = leaf.getParentEdgeLabel().toString();
 				
 				leaf.getParentEdgeLabel().applyRuleOne();
-				parent.getOutEdges().get(edge_label.charAt(0)).applyRuleOne();	
 				return new PathEnd(leaf, edge_label);
 			} else if(path_end.getEndNode().getType() == NodeType.INTERNAL) {
 				//then it ends on an internal node.
@@ -60,16 +60,17 @@ public class ImplicitSuffixTree {
 			if(!end_node.getParentEdgeLabel().startsWith(fragment + Character.toString(next_char))) {
 				String edge_label = end_node.getParentEdgeLabel().toString();
 				Pair<SubString> new_labels = end_node.getParentEdgeLabel().splitOnGamma(fragment);
-			
-				Node middle_node = new Node(NodeType.INTERNAL, end_node.getParent(), new_labels.getFirst());
-				middle_node.addOutEdge(new_labels.getSecond(), end_node);
+				SubString first_substring = new_labels.getFirst();
+				SubString second_substring = new_labels.getSecond();
+				Node middle_node = new Node(NodeType.INTERNAL, end_node.getParent(), first_substring);
+				middle_node.addOutEdge(second_substring, end_node);
 				
 				middle_node.add_leaf(new SubString(this.full_string, phase, phase + 1));
 				Edge parent_edge = parent_node.getOutEdges().get(edge_label.charAt(0));
 				parent_edge.child_node = middle_node;
-				parent_edge.setEdgeLabel(new_labels.getFirst());
+				parent_edge.setEdgeLabel(first_substring);
 				end_node.setParent(middle_node);
-				end_node.setParentEdgeLabel(new_labels.getSecond());
+				end_node.setParentEdgeLabel(second_substring);
 				if(parent_node.getType() == NodeType.ROOT && middle_node.getParentEdgeLabel().length() == 1) {
 					//in this case, we need to set the root to be the suffix link
 					middle_node.setSuffixLink(parent_node);
@@ -138,9 +139,10 @@ public class ImplicitSuffixTree {
 		if(leaf.getType() != NodeType.LEAF) {
 			throw new NotLeafException();
 		}
-		Node parent = leaf.getParent();
-		parent.getOutEdges().get(leaf.getParentEdgeLabel().charAt(0)).applyRuleOne();
 		
+		/* 
+		 * The parent's edge and child's parent_edge_label share a SubString for the label, so we only need to modify one of them.
+		 */
 		leaf.getParentEdgeLabel().applyRuleOne();
 	}
 	

@@ -87,9 +87,9 @@ public class Node {
 		char first_char = s.charAt(0);
 		if(getOutEdges().containsKey(first_char)) {
 			Edge edge = getOutEdges().get(first_char);
-			if(edge.edge_label_length < s.length()) {
-				return edge.child_node.traversePath(s.substring(edge.edge_label_length));
-			}else if(edge.edge_label_length == s.length()){
+			if(edge.getEdgeLabelLength() < s.length()) {
+				return edge.child_node.traversePath(s.substring(edge.getEdgeLabelLength()));
+			}else if(edge.getEdgeLabelLength() == s.length()){
 				//then it ends on the child.
 				PathEnd end = new PathEnd(edge.child_node);
 				return end;
