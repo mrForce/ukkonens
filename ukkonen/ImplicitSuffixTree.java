@@ -43,7 +43,7 @@ public class ImplicitSuffixTree {
 				String edge_label = leaf.getParentEdgeLabel().toString();
 				
 				leaf.getParentEdgeLabel().applyRuleOne();
-				parent.getOutEdges().get(edge_label.charAt(0)).edge_label.applyRuleOne();	
+				parent.getOutEdges().get(edge_label.charAt(0)).applyRuleOne();	
 				return new PathEnd(leaf, edge_label);
 			} else if(path_end.getEndNode().getType() == NodeType.INTERNAL) {
 				//then it ends on an internal node.
@@ -67,7 +67,7 @@ public class ImplicitSuffixTree {
 				middle_node.add_leaf(new SubString(this.full_string, phase, phase + 1));
 				Edge parent_edge = parent_node.getOutEdges().get(edge_label.charAt(0));
 				parent_edge.child_node = middle_node;
-				parent_edge.edge_label = new_labels.getFirst();
+				parent_edge.setEdgeLabel(new_labels.getFirst());
 				end_node.setParent(middle_node);
 				end_node.setParentEdgeLabel(new_labels.getSecond());
 				if(parent_node.getType() == NodeType.ROOT && middle_node.getParentEdgeLabel().length() == 1) {
@@ -139,7 +139,8 @@ public class ImplicitSuffixTree {
 			throw new NotLeafException();
 		}
 		Node parent = leaf.getParent();
-		parent.getOutEdges().get(leaf.getParentEdgeLabel().charAt(0)).edge_label.applyRuleOne();
+		parent.getOutEdges().get(leaf.getParentEdgeLabel().charAt(0)).applyRuleOne();
+		
 		leaf.getParentEdgeLabel().applyRuleOne();
 	}
 	

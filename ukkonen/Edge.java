@@ -10,4 +10,15 @@ public class Edge {
 		this.child_node = child_node;
 		this.edge_label_length = edge_label_length;
 	}
+	
+	public void applyRuleOne() {
+		this.edge_label.applyRuleOne();
+		this.edge_label_length++;
+	}
+
+	public void setEdgeLabel(SubString first) {
+		this.edge_label = first;
+		this.edge_label_length = first.length();
+		
+	}
 }
