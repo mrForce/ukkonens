@@ -27,7 +27,7 @@ public class Main {
 			for(int j = 0; j < i + 1; j++) {
 				String alpha = s.substring(j, i);
 				System.out.println(alpha);
-				if(alpha.equals("x") && next_char == 'c') {
+				if(alpha.equals("ax") && next_char == 'b') {
 					System.out.println("hi");
 				}
 				if(alpha.length() == 0) {
@@ -78,7 +78,7 @@ public class Main {
 						System.out.println("Problem! Parent is not root, and doesn't have a suffix link");
 					}
 					try {
-						tree.extend(end, next_char, i);
+						x_alpha_end = tree.extend(end, next_char, i);
 					} catch (NotLeafException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
