@@ -12,50 +12,65 @@ public class Main {
 		System.out.println("Enter in string to build suffix tree for:");
 		String s = scan.nextLine();
 		ImplicitSuffixTree tree = null;
+		TrickThreeCounter trick_three_counter = new TrickThreeCounter(1);
 		try {
-			 tree = ImplicitSuffixTree.firstTree(s);
+			 tree = ImplicitSuffixTree.firstTree(s, trick_three_counter);
 		} catch (OverwriteEdgeException e) {
 			// TODO Auto-generated catch block
 			System.out.println("Problem");
 			e.printStackTrace();
 		}
 		int length = s.length();
-		
-		PathEnd x_alpha_end = null;
+		System.out.println(getTreeString(tree));
+		String gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
+
+		PathEnd x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
+
+		int start_extension_number = 1;
 		for(int i = 1; i < length; i++) {
+			trick_three_counter.setCounter(i + 1);
 			char next_char = s.charAt(i);
-			for(int j = 0; j < i + 1; j++) {
+			int j;
+			if(i == 6)
+			{
+				System.out.println("things");
+			}
+			
+			for(j = start_extension_number; j < i + 1; j++) {
 				String alpha = s.substring(j, i);
 				System.out.println(alpha);
-				if(alpha.equals("ax") && next_char == 'b') {
-					System.out.println("hi");
-				}
 				if(alpha.length() == 0) {
 					if(!tree.getRoot().hasOutEdgeStartsWith(next_char)) {
 						try {
-							tree.getRoot().add_leaf(new SubString(s, i, i + 1));
+							x_alpha_end = new PathEnd(tree.getRoot().add_leaf(new SubString(s, i, trick_three_counter)));
 						} catch (OverwriteEdgeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
+					}else {
+						//this is basically RuleThree
+						start_extension_number = j;
+						x_alpha_end = new PathEnd(tree.getRoot().getOutEdges().get(next_char).child_node);
+						
+						break;
 					}
 					continue;
 				}
 				if(j == 0) {
-					String gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
+					 gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
+					/*
 					try {
 						tree.suffixExtendRuleOne(tree.getFullLeaf(), next_char);
 					} catch (OverwriteEdgeException e) {
 						System.out.println("Overwriting edge in extension " + Integer.toString(j) + " of phase: " + Integer.toString(i));
 					} catch (NotLeafException e) {
 						System.out.println("NotLeafException in extension  " + Integer.toString(j) + " of phase: " + Integer.toString(i));
-					}
-					//the path actually ends at 
+					}*/
 					x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
 					//x_alpha_end = new PathEnd(tree.getFullLeaf());
 				} else if (j == 1) {
 					Node x_alpha_node = x_alpha_end.getEndNode();
-					String gamma = x_alpha_end.getFragment();
+					gamma = x_alpha_end.getFragment();
 					Node parent = x_alpha_node.getParent();
 					
 					PathEnd end = null;
@@ -78,12 +93,19 @@ public class Main {
 						System.out.println("Problem! Parent is not root, and doesn't have a suffix link");
 					}
 					try {
-						x_alpha_end = tree.extend(end, next_char, i);
+						Pair<ExtensionRule, PathEnd> a =  tree.extend(end, next_char, i);
+						x_alpha_end = a.getSecond();
+						if(a.getFirst() == ExtensionRule.RuleThree) {
+							start_extension_number = j;
+							break;
+						}
 					} catch (NotLeafException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (OverwriteEdgeException e) {
 						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch(CouldNotExtendException e) {
 						e.printStackTrace();
 					}
 					/*
@@ -130,7 +152,12 @@ public class Main {
 					
 				} else {
 					try {
-						x_alpha_end = tree.singleExtension(x_alpha_end, alpha, next_char, i);
+						Pair<ExtensionRule, PathEnd> a = tree.singleExtension(x_alpha_end, alpha, next_char, i);
+						x_alpha_end = a.getSecond();
+						if(a.getFirst() == ExtensionRule.RuleThree) {
+							start_extension_number = j;
+							break;
+						}
 					} catch (NotLeafException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -146,9 +173,15 @@ public class Main {
 					} catch (SingleExtensionFailedException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
+					} catch (CouldNotExtendException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 				}
 			}
+			System.out.println("I " + Integer.toString(i + 1));
+			System.out.println(getTreeString(tree));
+			start_extension_number = j;
 		}
 		System.out.println("done");
 		System.out.println(getTreeString(tree));

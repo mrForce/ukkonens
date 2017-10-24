@@ -1,10 +1,10 @@
 package ukkonen;
 
-public class Pair<X> {
+public class Pair<X, Y> {
 
 	private X first;
-	private X second;
-	public Pair(X first, X second) {
+	private Y second;
+	public Pair(X first, Y second) {
 		this.setFirst(first);
 		this.setSecond(second);
 	}
@@ -14,10 +14,10 @@ public class Pair<X> {
 	public void setFirst(X first) {
 		this.first = first;
 	}
-	public X getSecond() {
+	public Y getSecond() {
 		return second;
 	}
-	public void setSecond(X second) {
+	public void setSecond(Y second) {
 		this.second = second;
 	}
 }

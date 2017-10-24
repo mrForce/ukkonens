@@ -45,6 +45,9 @@ public class Node {
 		return suffix_link;
 	}
 	public void setSuffixLink(Node suffix_link) {
+		if(this.parent.type == NodeType.ROOT) {
+			System.out.println("Why does this have a suffix link?");
+		}
 		this.suffix_link = suffix_link;
 		this.has_suffix_link = true;
 	}

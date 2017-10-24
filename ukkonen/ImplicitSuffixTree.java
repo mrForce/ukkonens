@@ -8,17 +8,19 @@ public class ImplicitSuffixTree {
 	private boolean need_suffix_link;
 	private Node node_that_needs_suffix_link;
 	private String full_string;
-	ImplicitSuffixTree(String full_string){
+	private TrickThreeCounter trick_three_counter;
+	ImplicitSuffixTree(String full_string, TrickThreeCounter e){
 		Node root = new Node();
 		this.full_string = full_string;
 		this.setRoot(root);
 		this.need_suffix_link = false;
 		this.node_that_needs_suffix_link = null;
+		this.trick_three_counter = e;
 	}
-	static ImplicitSuffixTree firstTree(String s) throws OverwriteEdgeException {
-		ImplicitSuffixTree tree = new ImplicitSuffixTree(s);
+	static ImplicitSuffixTree firstTree(String s, TrickThreeCounter e) throws OverwriteEdgeException {
+		ImplicitSuffixTree tree = new ImplicitSuffixTree(s, e);
 		Node root = tree.getRoot();
-		SubString edge_label = new SubString(s, 0, 1);
+		SubString edge_label = new SubString(s, 0, e);
 		Node first_leaf = new Node(NodeType.LEAF, root, edge_label);
 		root.addOutEdge(edge_label, first_leaf);
 		tree.setFullLeaf(first_leaf);
@@ -31,7 +33,7 @@ public class ImplicitSuffixTree {
 		return root;
 	}
 	/* This extends according to rules */
-	public PathEnd extend(PathEnd path_end, char next_char, int phase) throws NotLeafException, OverwriteEdgeException {
+	public Pair<ExtensionRule, PathEnd> extend(PathEnd path_end, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, CouldNotExtendException {
 		if(path_end.getType() == PathEndType.NODE) {
 			//then path ends on a node
 			if(path_end.getEndNode().getType() == NodeType.LEAF) {
@@ -42,16 +44,18 @@ public class ImplicitSuffixTree {
 					throw new NotLeafException();
 				}
 				String edge_label = leaf.getParentEdgeLabel().toString();
-				
-				leaf.getParentEdgeLabel().applyRuleOne();
-				return new PathEnd(leaf, edge_label);
+				//the TrickThreeCounter will be incremented in the next phase, so no need to do this.
+				//	leaf.getParentEdgeLabel().applyRuleOne();
+				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleOne, new PathEnd(leaf, edge_label));
 			} else if(path_end.getEndNode().getType() == NodeType.INTERNAL) {
 				//then it ends on an internal node.
 				Node end_node = path_end.getEndNode();
 				if(!end_node.hasOutEdgeStartsWith(next_char)) {
-					end_node.add_leaf(new SubString(this.full_string, phase, phase + 1));
+					end_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter));
+					return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, path_end);
+				}else {
+					return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, path_end);
 				}
-				return path_end;
 			}
 		} else if(path_end.getType() == PathEndType.EDGE) {
 			Node end_node = path_end.getEndNode();
@@ -59,13 +63,13 @@ public class ImplicitSuffixTree {
 			String fragment = path_end.getFragment();
 			if(!end_node.getParentEdgeLabel().startsWith(fragment + Character.toString(next_char))) {
 				String edge_label = end_node.getParentEdgeLabel().toString();
-				Pair<SubString> new_labels = end_node.getParentEdgeLabel().splitOnGamma(fragment);
+				Pair<SubString, SubString> new_labels = end_node.getParentEdgeLabel().splitOnGamma(fragment);
 				SubString first_substring = new_labels.getFirst();
 				SubString second_substring = new_labels.getSecond();
 				Node middle_node = new Node(NodeType.INTERNAL, end_node.getParent(), first_substring);
 				middle_node.addOutEdge(second_substring, end_node);
 				
-				middle_node.add_leaf(new SubString(this.full_string, phase, phase + 1));
+				middle_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter));
 				Edge parent_edge = parent_node.getOutEdges().get(edge_label.charAt(0));
 				parent_edge.child_node = middle_node;
 				parent_edge.setEdgeLabel(first_substring);
@@ -73,24 +77,24 @@ public class ImplicitSuffixTree {
 				end_node.setParentEdgeLabel(second_substring);
 				if(parent_node.getType() == NodeType.ROOT && middle_node.getParentEdgeLabel().length() == 1) {
 					//in this case, we need to set the root to be the suffix link
-					middle_node.setSuffixLink(parent_node);
+					//middle_node.setSuffixLink(parent_node);
 				}else {
 					//set the new internal node, which has path S[j-1...i], to get a suffix link to S[j...i] on the next extension.
 					this.need_suffix_link = true;
 					this.node_that_needs_suffix_link = middle_node;
 				}
-				return new PathEnd(middle_node);
+				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, new PathEnd(middle_node));
 			}else {
 				//don't do anything, since the next character in the path is next_char 
-				return path_end;
+				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, path_end);
 			}
 			
 		}
 		System.out.println("Problem with applying suffix extension rules");
-		return path_end;
+		throw new CouldNotExtendException();
 	}
 	
-	public PathEnd singleExtension(PathEnd path_end, String alpha, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, NoSuchEdgeException, MissingSuffixLinkException, SingleExtensionFailedException {
+	public Pair<ExtensionRule, PathEnd> singleExtension(PathEnd path_end, String alpha, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, NoSuchEdgeException, MissingSuffixLinkException, SingleExtensionFailedException, CouldNotExtendException {
 		if(path_end.getType() == PathEndType.NODE) {
 			Node end_node = path_end.getEndNode();
 			if(this.need_suffix_link) {
@@ -135,16 +139,16 @@ public class ImplicitSuffixTree {
 		throw new SingleExtensionFailedException();
 	}
 	/* path beta ends at a leaf, so pass the leaf, and next character*/
-	public void suffixExtendRuleOne(Node leaf, char next_char) throws OverwriteEdgeException, NotLeafException {
+/*	public void suffixExtendRuleOne(Node leaf, char next_char) throws OverwriteEdgeException, NotLeafException {
 		if(leaf.getType() != NodeType.LEAF) {
 			throw new NotLeafException();
 		}
 		
-		/* 
-		 * The parent's edge and child's parent_edge_label share a SubString for the label, so we only need to modify one of them.
-		 */
-		leaf.getParentEdgeLabel().applyRuleOne();
-	}
+		
+		 //The parent's edge and child's parent_edge_label share a SubString for the label, so we only need to modify one of them.
+		 
+		//leaf.getParentEdgeLabel().applyRuleOne();
+	}*/
 	
 	/* No path from the end of string beta starts with character S(i + 1), but at least one labeled path continues from the end of beta.
 	 * This creates a new leaf edge starting from the end of beta, and labeled with character S(i + 1). 
