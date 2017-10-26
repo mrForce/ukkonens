@@ -107,7 +107,6 @@ public class ImplicitSuffixTree {
 				}
 				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, new PathEnd(middle_node));
 			}else {
-				//don't do anything, since the next character in the path is next_char 
 				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, path_end);
 			}
 			
@@ -123,6 +122,9 @@ public class ImplicitSuffixTree {
 				Node link = end_node.getSuffixLink();
 				PathEnd new_path = new PathEnd(link);
 				return this.extend(new_path, next_char, phase);
+			}else if(end_node.getType() == NodeType.ROOT){
+				PathEnd traversed_path = end_node.traversePath(alpha);
+				return this.extend(traversed_path, next_char, phase);
 			}else {
 				Node parent = end_node.getParent();
 				if(parent.getType() == NodeType.ROOT) {
@@ -131,7 +133,7 @@ public class ImplicitSuffixTree {
 				} else if(parent.hasSuffixLink()){
 					Node link = parent.getSuffixLink();
 					String parent_edge_label = end_node.getParentEdgeLabel().toString();
-					String gamma = parent_edge_label.substring(0, parent_edge_label.length() - 1);
+					String gamma = parent_edge_label.substring(0, parent_edge_label.length());
 					PathEnd sv = link.traversePath(gamma);
 					return this.extend(sv, next_char, phase);
 				}
