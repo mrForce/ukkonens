@@ -29,16 +29,32 @@ public class ImplicitSuffixTree {
 	public String getFullString() {
 		return this.full_string;
 	}
+	public TrickThreeCounter getTrickThreeCounter() {
+		return this.trick_three_counter;
+	}
+	public void setFullString(String s) {
+		this.full_string = s;
+		this.need_suffix_link = false;
+		this.node_that_needs_suffix_link = null;
+	}
+	public void setTrickThreeCounter(TrickThreeCounter e) {
+		this.trick_three_counter = e;
+	}
 	public Node getRoot() {
 		return root;
+	}
+	public void clearSuffixLinkSetup() {
+		this.need_suffix_link = false;
+		this.node_that_needs_suffix_link = null;
 	}
 	/* This extends according to rules */
 	public Pair<ExtensionRule, PathEnd> extend(PathEnd path_end, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, CouldNotExtendException {
 		if(path_end.getType() == PathEndType.NODE) {
+			Node end_node = path_end.getEndNode();
 			//then path ends on a node
-			if(path_end.getEndNode().getType() == NodeType.LEAF) {
-				//then path ends at a leaf
-				Node leaf = path_end.getEndNode();
+			if(end_node.getType() == NodeType.LEAF) {
+				//then path ena leaf
+				Node leaf = end_node;
 				Node parent = leaf.getParent();
 				if(leaf.getType() != NodeType.LEAF) {
 					throw new NotLeafException();
@@ -47,15 +63,17 @@ public class ImplicitSuffixTree {
 				//the TrickThreeCounter will be incremented in the next phase, so no need to do this.
 				//	leaf.getParentEdgeLabel().applyRuleOne();
 				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleOne, new PathEnd(leaf, edge_label));
-			} else if(path_end.getEndNode().getType() == NodeType.INTERNAL) {
-				//then it ends on an internal node.
-				Node end_node = path_end.getEndNode();
-				if(!end_node.hasOutEdgeStartsWith(next_char)) {
-					end_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter));
-					return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, path_end);
-				}else {
-					return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, path_end);
-				}
+			} else if(path_end.getEndNode().getType() == NodeType.INTERNAL && this.need_suffix_link) {
+					this.node_that_needs_suffix_link.setSuffixLink(end_node);
+					this.need_suffix_link = false;
+					this.node_that_needs_suffix_link = null;
+				
+			}
+			if(!end_node.hasOutEdgeStartsWith(next_char)) {
+				end_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter));
+				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, path_end);
+			}else {
+				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, path_end);
 			}
 		} else if(path_end.getType() == PathEndType.EDGE) {
 			Node end_node = path_end.getEndNode();
@@ -67,6 +85,11 @@ public class ImplicitSuffixTree {
 				SubString first_substring = new_labels.getFirst();
 				SubString second_substring = new_labels.getSecond();
 				Node middle_node = new Node(NodeType.INTERNAL, end_node.getParent(), first_substring);
+				if(this.need_suffix_link) {
+					this.node_that_needs_suffix_link.setSuffixLink(middle_node);
+					this.need_suffix_link = false;
+					this.node_that_needs_suffix_link = null;
+				}
 				middle_node.addOutEdge(second_substring, end_node);
 				
 				middle_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter));
@@ -75,13 +98,12 @@ public class ImplicitSuffixTree {
 				parent_edge.setEdgeLabel(first_substring);
 				end_node.setParent(middle_node);
 				end_node.setParentEdgeLabel(second_substring);
-				if(parent_node.getType() == NodeType.ROOT && middle_node.getParentEdgeLabel().length() == 1) {
-					//in this case, we need to set the root to be the suffix link
-					//middle_node.setSuffixLink(parent_node);
-				}else {
+				if(parent_node.getType() != NodeType.ROOT || middle_node.getParentEdgeLabel().length() != 1) {
 					//set the new internal node, which has path S[j-1...i], to get a suffix link to S[j...i] on the next extension.
 					this.need_suffix_link = true;
 					this.node_that_needs_suffix_link = middle_node;
+				}else {
+					middle_node.setSuffixLink(this.root);
 				}
 				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, new PathEnd(middle_node));
 			}else {
@@ -97,11 +119,6 @@ public class ImplicitSuffixTree {
 	public Pair<ExtensionRule, PathEnd> singleExtension(PathEnd path_end, String alpha, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, NoSuchEdgeException, MissingSuffixLinkException, SingleExtensionFailedException, CouldNotExtendException {
 		if(path_end.getType() == PathEndType.NODE) {
 			Node end_node = path_end.getEndNode();
-			if(this.need_suffix_link) {
-				this.node_that_needs_suffix_link.setSuffixLink(end_node);
-				this.need_suffix_link = false;
-				this.node_that_needs_suffix_link = null;
-			}
 			if(end_node.hasSuffixLink()) {
 				Node link = end_node.getSuffixLink();
 				PathEnd new_path = new PathEnd(link);

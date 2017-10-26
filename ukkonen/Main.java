@@ -1,6 +1,9 @@
 package ukkonen;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -9,25 +12,99 @@ public class Main {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		Scanner scan = new Scanner(System.in);
-		System.out.println("Enter in string to build suffix tree for:");
-		String s = scan.nextLine();
+		System.out.println("Enter in strings to build suffix tree for:");
+		List<String> proteins = new ArrayList<String>();
+		while(scan.hasNextLine()) {
+			String next_line = scan.nextLine();
+			if(next_line.length() == 0) {
+				break;
+			}
+			String protein = next_line + "$";
+			protein.intern();
+			proteins.add(protein);
+		}
 		ImplicitSuffixTree tree = null;
 		TrickThreeCounter trick_three_counter = new TrickThreeCounter(1);
 		try {
-			 tree = ImplicitSuffixTree.firstTree(s, trick_three_counter);
+			 tree = ImplicitSuffixTree.firstTree(proteins.get(0), trick_three_counter);
 		} catch (OverwriteEdgeException e) {
 			// TODO Auto-generated catch block
 			System.out.println("Problem");
 			e.printStackTrace();
 		}
-		int length = s.length();
+		Iterator protein_iter = proteins.iterator();
+		addToTree(tree, (String) protein_iter.next(), true);
+		while(protein_iter.hasNext()) {
+			addToTree(tree, (String) protein_iter.next(), false);
+		}
+		System.out.println(getTreeString(tree));
+
+	}
+	
+	public static int stringOverlap(String one, int index_one, String two) {
+		/* 
+		 * Suppose one = ABBCDD, and index_one = 1, and two = BBQ
+		 * 
+		 * It overlaps BBCDD with BBQ, and returns 2, since BB overlaps. It returns the number of characters that overlap.
+		 * 
+		 */
+		int j = 0;
+		while(index_one + j < one.length() && j < two.length() && one.charAt(index_one + j) == two.charAt(j)) {
+			j++;
+		}
+		return j;
+	}
+	
+	public static int matchStringAgainstTree(ImplicitSuffixTree tree, String s) {
+		Node node = tree.getRoot();
+		int i = 0;
+		boolean keepGoing = true;
+		while(keepGoing) {
+			if(node.hasOutEdgeStartsWith(s.charAt(i))) {
+				String edge_label = node.getOutEdges().get(s.charAt(i)).edge_label.toString();
+				int overlap = stringOverlap(s, i, edge_label);
+				i += overlap;
+				if(overlap < edge_label.length()) {
+					return i;
+				}
+			}else {
+				return i;
+			}
+		}
+		return -1;
+		
+	}
+	public static void addToTree(ImplicitSuffixTree tree, String s, boolean first_string){
+		int start_phase = 1;
+		TrickThreeCounter trick_three_counter = null;
+		if(first_string) {
+			trick_three_counter = tree.getTrickThreeCounter();
+			start_phase = 1;
+		}else {
+			tree.setFullString(s);
+			trick_three_counter = new TrickThreeCounter(1);
+			tree.setTrickThreeCounter(trick_three_counter);
+			if(tree.getRoot().hasOutEdgeStartsWith(s.charAt(0))) {
+				start_phase  = matchStringAgainstTree(tree, s);
+			}else {
+				try {
+					tree.getRoot().add_leaf(new SubString(s, 0, trick_three_counter));
+				} catch (OverwriteEdgeException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				start_phase = 1;
+			}
+		}
+				int length = s.length();
 		System.out.println(getTreeString(tree));
 		String gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
 
 		PathEnd x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
 
 		int start_extension_number = 1;
-		for(int i = 1; i < length; i++) {
+		for(int i = start_phase; i < length; i++) {
+			tree.clearSuffixLinkSetup();
 			trick_three_counter.setCounter(i + 1);
 			char next_char = s.charAt(i);
 			int j;
@@ -35,9 +112,14 @@ public class Main {
 			{
 				System.out.println("things");
 			}
-			
+			if(i == length - 1) {
+				System.out.println("hello");
+			}
 			for(j = start_extension_number; j < i + 1; j++) {
 				String alpha = s.substring(j, i);
+				if(i == 5 && j == 4) {
+					System.out.println("equals");
+				}
 				System.out.println(alpha);
 				if(alpha.length() == 0) {
 					if(!tree.getRoot().hasOutEdgeStartsWith(next_char)) {
@@ -49,10 +131,12 @@ public class Main {
 						}
 					}else {
 						//this is basically RuleThree
+						
 						start_extension_number = j;
 						x_alpha_end = new PathEnd(tree.getRoot().getOutEdges().get(next_char).child_node);
-						
-						break;
+						if(i != length - 1) {
+							break;
+						}
 					}
 					continue;
 				}
@@ -95,7 +179,10 @@ public class Main {
 					try {
 						Pair<ExtensionRule, PathEnd> a =  tree.extend(end, next_char, i);
 						x_alpha_end = a.getSecond();
-						if(a.getFirst() == ExtensionRule.RuleThree) {
+						if(x_alpha_end.getEndNode().getType() == NodeType.ROOT) {
+							System.out.println("Why does it end at root?");
+						}
+						if(a.getFirst() == ExtensionRule.RuleThree && i < length - 1) {
 							start_extension_number = j;
 							break;
 						}
@@ -154,7 +241,10 @@ public class Main {
 					try {
 						Pair<ExtensionRule, PathEnd> a = tree.singleExtension(x_alpha_end, alpha, next_char, i);
 						x_alpha_end = a.getSecond();
-						if(a.getFirst() == ExtensionRule.RuleThree) {
+						if(x_alpha_end.getEndNode().getType() == NodeType.ROOT) {
+							System.out.println("Why does it end at root?");
+						}
+						if(a.getFirst() == ExtensionRule.RuleThree && i < length - 1) {
 							start_extension_number = j;
 							break;
 						}
