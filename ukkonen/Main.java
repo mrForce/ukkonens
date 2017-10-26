@@ -85,7 +85,7 @@ public class Main {
 			trick_three_counter = new TrickThreeCounter(1);
 			tree.setTrickThreeCounter(trick_three_counter);
 			if(tree.getRoot().hasOutEdgeStartsWith(s.charAt(0))) {
-				start_phase  = matchStringAgainstTree(tree, s);
+				start_phase  = matchStringAgainstTree(tree, s) + 1;
 			}else {
 				try {
 					tree.getRoot().add_leaf(new SubString(s, 0, trick_three_counter));
