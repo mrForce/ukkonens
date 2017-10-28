@@ -12,6 +12,7 @@ public class Main {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		Scanner scan = new Scanner(System.in);
+		/*
 		System.out.println("Enter in strings to build suffix tree for:");
 		List<String> proteins = new ArrayList<String>();
 		while(scan.hasNextLine()) {
@@ -22,7 +23,10 @@ public class Main {
 			String protein = next_line + "$";
 			protein.intern();
 			proteins.add(protein);
-		}
+		}*/
+		List<String> proteins = new ArrayList<String>();
+		proteins.add("babxba$");
+		proteins.add("xabxa$");
 		ImplicitSuffixTree tree = null;
 		TrickThreeCounter trick_three_counter = new TrickThreeCounter(1);
 		try {
@@ -85,7 +89,7 @@ public class Main {
 			trick_three_counter = new TrickThreeCounter(1);
 			tree.setTrickThreeCounter(trick_three_counter);
 			if(tree.getRoot().hasOutEdgeStartsWith(s.charAt(0))) {
-				start_phase  = matchStringAgainstTree(tree, s) + 1;
+				start_phase  = matchStringAgainstTree(tree, s);
 			}else {
 				try {
 					tree.getRoot().add_leaf(new SubString(s, 0, trick_three_counter));
@@ -98,31 +102,48 @@ public class Main {
 		}
 				int length = s.length();
 		System.out.println(getTreeString(tree));
-		String gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
+		PathEnd x_alpha_end = null;
+		String gamma;
+		if(first_string) {
+			 gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
 
-		PathEnd x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
-
-		int start_extension_number = 1;
+			 x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
+		}else {
+			 x_alpha_end = new PathEnd(tree.getRoot());
+		}
+		int start_extension_number = 0;
+		boolean no_suffix_traversal = false;
 		for(int i = start_phase; i < length; i++) {
+			if(i == length - 1) {
+				System.out.println("Hello");
+			}
 			tree.clearSuffixLinkSetup();
 			trick_three_counter.setCounter(i + 1);
 			char next_char = s.charAt(i);
 			int j;
-			if(i == 6)
+			if(!first_string)
 			{
 				System.out.println("things");
 			}
 			if(i == length - 1) {
 				System.out.println("hello");
 			}
+			/* Suppose S[j...i + 1] is in the tree, and x_alpha_end points to the end of it.
+			 * 
+			 * This is the case if the last phase ended with rule 3. We don't need to traverse any suffix links,
+			 * since we are currently trying to add S[i + 2] to S[j... i + 1].
+			 */
 			for(j = start_extension_number; j < i + 1; j++) {
 				String alpha = s.substring(j, i);
-				if(i == 5 && j == 4) {
+				if(!first_string && alpha.equals("abx") && next_char == 'a') {
 					System.out.println("equals");
 				}
 				System.out.println(alpha);
+				System.out.println("i: " + Integer.toString(i));
+				System.out.println("j: " + Integer.toString(j));
 				if(alpha.length() == 0) {
 					if(!tree.getRoot().hasOutEdgeStartsWith(next_char)) {
+						no_suffix_traversal = false;
 						try {
 							x_alpha_end = new PathEnd(tree.getRoot().add_leaf(new SubString(s, i, trick_three_counter)));
 						} catch (OverwriteEdgeException e) {
@@ -133,14 +154,22 @@ public class Main {
 						//this is basically RuleThree
 						
 						start_extension_number = j;
-						x_alpha_end = new PathEnd(tree.getRoot().getOutEdges().get(next_char).child_node);
+						Node x_alpha_end_node = tree.getRoot().getOutEdges().get(next_char).child_node;
+						if(x_alpha_end_node.getParentEdgeLabel().length() == 1 && x_alpha_end_node.getType() == NodeType.INTERNAL) {
+							x_alpha_end = new PathEnd(x_alpha_end_node);
+						}else {
+							x_alpha_end = new PathEnd(x_alpha_end_node, Character.toString(next_char));
+						}
+						
 						if(i != length - 1) {
+							System.out.println("Rule Three triggered");
+							no_suffix_traversal = true;
 							break;
 						}
 					}
 					continue;
 				}
-				if(j == 0) {
+				if(j == 0 && first_string) {
 					 gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
 					/*
 					try {
@@ -151,8 +180,9 @@ public class Main {
 						System.out.println("NotLeafException in extension  " + Integer.toString(j) + " of phase: " + Integer.toString(i));
 					}*/
 					x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
+					no_suffix_traversal = false;
 					//x_alpha_end = new PathEnd(tree.getFullLeaf());
-				} else if (j == 1) {
+				} else if (j == 1 && first_string) {
 					Node x_alpha_node = x_alpha_end.getEndNode();
 					gamma = x_alpha_end.getFragment();
 					Node parent = x_alpha_node.getParent();
@@ -179,11 +209,14 @@ public class Main {
 					try {
 						Pair<ExtensionRule, PathEnd> a =  tree.extend(end, next_char, i);
 						x_alpha_end = a.getSecond();
+						no_suffix_traversal = false;
 						if(x_alpha_end.getEndNode().getType() == NodeType.ROOT) {
 							System.out.println("Why does it end at root?");
 						}
 						if(a.getFirst() == ExtensionRule.RuleThree && i < length - 1) {
 							start_extension_number = j;
+							no_suffix_traversal = true;	
+							System.out.println("Rule three triggered");
 							break;
 						}
 					} catch (NotLeafException e) {
@@ -234,18 +267,24 @@ public class Main {
 									e.printStackTrace();
 								}
 							}
-						}*/
+						}*/ catch (InvalidPathEndException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 						
 					
 				} else {
 					try {
-						Pair<ExtensionRule, PathEnd> a = tree.singleExtension(x_alpha_end, alpha, next_char, i);
+						Pair<ExtensionRule, PathEnd> a = tree.singleExtension(x_alpha_end, alpha, next_char, i, no_suffix_traversal);
 						x_alpha_end = a.getSecond();
+						no_suffix_traversal = false;
 						if(x_alpha_end.getEndNode().getType() == NodeType.ROOT) {
 							System.out.println("Why does it end at root?");
 						}
 						if(a.getFirst() == ExtensionRule.RuleThree && i < length - 1) {
 							start_extension_number = j;
+							System.out.println("Rule Three triggered");
+							no_suffix_traversal = true;
 							break;
 						}
 					} catch (NotLeafException e) {
@@ -264,6 +303,9 @@ public class Main {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					} catch (CouldNotExtendException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (InvalidPathEndException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}

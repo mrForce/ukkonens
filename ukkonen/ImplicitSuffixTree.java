@@ -48,7 +48,7 @@ public class ImplicitSuffixTree {
 		this.node_that_needs_suffix_link = null;
 	}
 	/* This extends according to rules */
-	public Pair<ExtensionRule, PathEnd> extend(PathEnd path_end, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, CouldNotExtendException {
+	public Pair<ExtensionRule, PathEnd> extend(PathEnd path_end, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, CouldNotExtendException, InvalidPathEndException {
 		if(path_end.getType() == PathEndType.NODE) {
 			Node end_node = path_end.getEndNode();
 			//then path ends on a node
@@ -73,9 +73,21 @@ public class ImplicitSuffixTree {
 				end_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter));
 				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, path_end);
 			}else {
-				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, path_end);
+				Edge end_edge = end_node.getOutEdges().get(next_char);
+				PathEnd new_path_end;
+				//if end_edge ends at a leaf, and the edge has 1 character on it, then in the next phase, the edge will have 2 characters on it
+				if(end_edge.getEdgeLabelLength() == 1 && end_edge.child_node.getType() == NodeType.INTERNAL) {
+					new_path_end = new PathEnd(end_edge.child_node);
+				}else {
+					new_path_end = new PathEnd(end_edge.child_node, Character.toString(next_char));
+				}
+				//PathEnd new_path = new PathEnd(end_node.getOutEdges().get(next_char), Character.toString(c))
+				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, new_path_end);
 			}
 		} else if(path_end.getType() == PathEndType.EDGE) {
+			if(path_end.getFragment().length() == path_end.getEndNode().getParentEdgeLabel().length()) {
+				throw new InvalidPathEndException();
+			}
 			Node end_node = path_end.getEndNode();
 			Node parent_node = end_node.getParent();
 			String fragment = path_end.getFragment();
@@ -107,7 +119,11 @@ public class ImplicitSuffixTree {
 				}
 				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, new PathEnd(middle_node));
 			}else {
-				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, path_end);
+				if(path_end.getFragment().length() + 1 == end_node.getParentEdgeLabel().length()) {
+					return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, new PathEnd(end_node));
+				}else {
+					return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleThree, new PathEnd(end_node, path_end.getFragment() + Character.toString(next_char)));
+				}
 			}
 			
 		}
@@ -115,13 +131,22 @@ public class ImplicitSuffixTree {
 		throw new CouldNotExtendException();
 	}
 	
-	public Pair<ExtensionRule, PathEnd> singleExtension(PathEnd path_end, String alpha, char next_char, int phase) throws NotLeafException, OverwriteEdgeException, NoSuchEdgeException, MissingSuffixLinkException, SingleExtensionFailedException, CouldNotExtendException {
+	public Pair<ExtensionRule, PathEnd> singleExtension(PathEnd path_end, String alpha, char next_char, int phase, boolean no_suffix_traversal) throws NotLeafException, OverwriteEdgeException, NoSuchEdgeException, MissingSuffixLinkException, SingleExtensionFailedException, CouldNotExtendException, InvalidPathEndException {
+		if(no_suffix_traversal) {
+			return this.extend(path_end, next_char, phase);
+		}
 		if(path_end.getType() == PathEndType.NODE) {
 			Node end_node = path_end.getEndNode();
 			if(end_node.hasSuffixLink()) {
 				Node link = end_node.getSuffixLink();
-				PathEnd new_path = new PathEnd(link);
-				return this.extend(new_path, next_char, phase);
+				if(link.getType() == NodeType.ROOT) {
+					//if the link is to the root, then we want to traverse down alpha
+					PathEnd traversed_path = link.traversePath(alpha);
+					return this.extend(traversed_path, next_char, phase);
+				}else {
+					PathEnd new_path = new PathEnd(link);
+					return this.extend(new_path, next_char, phase);
+				}
 			}else if(end_node.getType() == NodeType.ROOT){
 				PathEnd traversed_path = end_node.traversePath(alpha);
 				return this.extend(traversed_path, next_char, phase);
