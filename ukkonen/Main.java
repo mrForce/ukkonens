@@ -37,9 +37,11 @@ public class Main {
 			e.printStackTrace();
 		}
 		Iterator protein_iter = proteins.iterator();
-		addToTree(tree, (String) protein_iter.next(), true);
+		addToTree(tree, (String) protein_iter.next(), 0);
+		int i = 1;
 		while(protein_iter.hasNext()) {
-			addToTree(tree, (String) protein_iter.next(), false);
+			addToTree(tree, (String) protein_iter.next(), i);
+			i++;
 		}
 		System.out.println(getTreeString(tree));
 
@@ -78,10 +80,11 @@ public class Main {
 		return -1;
 		
 	}
-	public static void addToTree(ImplicitSuffixTree tree, String s, boolean first_string){
+	public static void addToTree(ImplicitSuffixTree tree, String s, int string_number){
 		int start_phase = 1;
 		TrickThreeCounter trick_three_counter = null;
-		if(first_string) {
+		
+		if(string_number == 0) {
 			trick_three_counter = tree.getTrickThreeCounter();
 			start_phase = 1;
 		}else {
@@ -92,7 +95,7 @@ public class Main {
 				start_phase  = matchStringAgainstTree(tree, s);
 			}else {
 				try {
-					tree.getRoot().add_leaf(new SubString(s, 0, trick_three_counter));
+					tree.getRoot().add_leaf(new SubString(s, 0, trick_three_counter), string_number);
 				} catch (OverwriteEdgeException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -104,7 +107,7 @@ public class Main {
 		System.out.println(getTreeString(tree));
 		PathEnd x_alpha_end = null;
 		String gamma;
-		if(first_string) {
+		if(string_number == 0) {
 			 gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
 
 			 x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
@@ -121,7 +124,7 @@ public class Main {
 			trick_three_counter.setCounter(i + 1);
 			char next_char = s.charAt(i);
 			int j;
-			if(!first_string)
+			if(string_number != 0)
 			{
 				System.out.println("things");
 			}
@@ -135,7 +138,7 @@ public class Main {
 			 */
 			for(j = start_extension_number; j < i + 1; j++) {
 				String alpha = s.substring(j, i);
-				if(!first_string && alpha.equals("abx") && next_char == 'a') {
+				if(string_number != 0 && alpha.equals("abx") && next_char == 'a') {
 					System.out.println("equals");
 				}
 				System.out.println(alpha);
@@ -145,7 +148,7 @@ public class Main {
 					if(!tree.getRoot().hasOutEdgeStartsWith(next_char)) {
 						no_suffix_traversal = false;
 						try {
-							x_alpha_end = new PathEnd(tree.getRoot().add_leaf(new SubString(s, i, trick_three_counter)));
+							x_alpha_end = new PathEnd(tree.getRoot().add_leaf(new SubString(s, i, trick_three_counter), string_number));
 						} catch (OverwriteEdgeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -169,7 +172,7 @@ public class Main {
 					}
 					continue;
 				}
-				if(j == 0 && first_string) {
+				if(j == 0 && string_number == 0) {
 					 gamma = tree.getFullLeaf().getParentEdgeLabel().toString();
 					/*
 					try {
@@ -182,7 +185,7 @@ public class Main {
 					x_alpha_end = new PathEnd(tree.getFullLeaf(), gamma);
 					no_suffix_traversal = false;
 					//x_alpha_end = new PathEnd(tree.getFullLeaf());
-				} else if (j == 1 && first_string) {
+				} else if (j == 1 && string_number == 0) {
 					Node x_alpha_node = x_alpha_end.getEndNode();
 					gamma = x_alpha_end.getFragment();
 					Node parent = x_alpha_node.getParent();
@@ -207,7 +210,7 @@ public class Main {
 						System.out.println("Problem! Parent is not root, and doesn't have a suffix link");
 					}
 					try {
-						Pair<ExtensionRule, PathEnd> a =  tree.extend(end, next_char, i);
+						Pair<ExtensionRule, PathEnd> a =  tree.extend(end, next_char, i, string_number);
 						x_alpha_end = a.getSecond();
 						no_suffix_traversal = false;
 						if(x_alpha_end.getEndNode().getType() == NodeType.ROOT) {
@@ -275,7 +278,7 @@ public class Main {
 					
 				} else {
 					try {
-						Pair<ExtensionRule, PathEnd> a = tree.singleExtension(x_alpha_end, alpha, next_char, i, no_suffix_traversal);
+						Pair<ExtensionRule, PathEnd> a = tree.singleExtension(x_alpha_end, alpha, next_char, i, no_suffix_traversal, string_number);
 						x_alpha_end = a.getSecond();
 						no_suffix_traversal = false;
 						if(x_alpha_end.getEndNode().getType() == NodeType.ROOT) {
@@ -315,6 +318,17 @@ public class Main {
 			System.out.println(getTreeString(tree));
 			start_extension_number = j;
 		}
+		for(int j = 1; j < length; j++) {
+			System.out.println("going to root at: " + s.substring(j));
+			Node leaf = null;
+			try {
+				leaf = tree.getRoot().traversePath(s.substring(j)).getEndNode();
+			} catch (NoSuchEdgeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			leaf.getStrings_from().add(string_number);
+		}
 		System.out.println("done");
 		System.out.println(getTreeString(tree));
 	}
@@ -322,6 +336,14 @@ public class Main {
 		String string = "";
 		String parent_name = Integer.toString(counter.counter);
 		counter.counter++;
+		if(parent.getOutEdges().values().size() == 0) {
+			//then a child node
+			String leaf_origins = "";
+			for(Integer i : parent.getStrings_from()) {
+				leaf_origins += " " + i.toString() + ",";
+			}
+			System.out.println("Node: L" + parent_name + " from these strings:" + leaf_origins);
+		}
 		for(Edge edge : parent.getOutEdges().values()) {
 			Node child = edge.child_node;
 			String label = edge.edge_label.toString();

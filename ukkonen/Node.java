@@ -1,6 +1,7 @@
 package ukkonen;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class Node {
 
@@ -10,13 +11,23 @@ public class Node {
 	private NodeType type;
 	private SubString parent_edge_label;
 	private Node parent;
+	//if this is a leaf node, then this holds which 
+	private HashSet<Integer> strings_from;
+	private int string_number;
 	Node(){
 		//create root
 		setType(NodeType.ROOT);
 		this.has_suffix_link = false;
+		this.strings_from = null;
 		this.out_edges = new HashMap<Character, Edge>();
 	}
-	Node(NodeType type, Node parent, SubString parent_edge_label){
+	Node(NodeType type, Node parent, SubString parent_edge_label, int string_number){
+		if(type == NodeType.LEAF) {
+			this.strings_from = new HashSet<Integer>();
+			this.strings_from.add(string_number);
+		}else {
+			this.strings_from = null;
+		}
 		 setType(type);
 		 setParent(parent);
 		 setParentEdgeLabel(parent_edge_label);
@@ -31,11 +42,11 @@ public class Node {
 			return false;
 		}
 	}
-	public Node add_leaf(SubString s) throws OverwriteEdgeException {
+	public Node add_leaf(SubString s, int string_number) throws OverwriteEdgeException {
 		if(this.out_edges.containsKey(s.charAt(0))) {
 			throw new OverwriteEdgeException(s);
 		}else {
-			Node leaf = new Node(NodeType.LEAF, this, s);
+			Node leaf = new Node(NodeType.LEAF, this, s, string_number);
 			Edge edge = new Edge(s, leaf, s.length());
 			this.out_edges.put(s.charAt(0), edge);
 			return leaf;
@@ -104,5 +115,17 @@ public class Node {
 			throw new NoSuchEdgeException();
 		}
 	
+	}
+	public HashSet<Integer> getStrings_from() {
+		return strings_from;
+	}
+	public void setStrings_from(HashSet<Integer> strings_from) {
+		this.strings_from = strings_from;
+	}
+	public int getString_number() {
+		return string_number;
+	}
+	public void setString_number(int string_number) {
+		this.string_number = string_number;
 	}
 }
