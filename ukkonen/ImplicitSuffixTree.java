@@ -70,7 +70,7 @@ public class ImplicitSuffixTree {
 				
 			}
 			if(!end_node.hasOutEdgeStartsWith(next_char)) {
-				end_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter), string_number);
+				end_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter), next_char, string_number);
 				return new Pair<ExtensionRule, PathEnd>(ExtensionRule.RuleTwo, path_end);
 			}else {
 				Edge end_edge = end_node.getOutEdges().get(next_char);
@@ -104,7 +104,7 @@ public class ImplicitSuffixTree {
 				}
 				middle_node.addOutEdge(second_substring, end_node);
 				
-				middle_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter), string_number);
+				middle_node.add_leaf(new SubString(this.full_string, phase, this.trick_three_counter), next_char, string_number);
 				Edge parent_edge = parent_node.getOutEdges().get(edge_label.charAt(0));
 				parent_edge.child_node = middle_node;
 				parent_edge.setEdgeLabel(first_substring);
@@ -243,5 +243,25 @@ public class ImplicitSuffixTree {
 	public void setFullLeaf(Node full_leaf) {
 		this.full_leaf = full_leaf;
 	}
-	
+	public boolean validate(String s, int string_number) {
+		/* Here we are checking if all of the string's suffixes are in the tree 
+		 * 
+		 */
+		for(int j = 0; j < s.length(); j++) {
+			PathEnd end = null;
+			try {
+				end = this.getRoot().traversePath(s.substring(j));
+			} catch (NoSuchEdgeException e) {
+				return false;
+			}
+			if(!end.getEndNode().getStrings_from().contains(string_number)) {
+				return false;
+			}
+			if(end.getEndNode().getType() != NodeType.LEAF) {
+				return false;
+			}
+		}
+		return true;
+			
+	}
 }

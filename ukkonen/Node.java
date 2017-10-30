@@ -42,13 +42,13 @@ public class Node {
 			return false;
 		}
 	}
-	public Node add_leaf(SubString s, int string_number) throws OverwriteEdgeException {
-		if(this.out_edges.containsKey(s.charAt(0))) {
+	public Node add_leaf(SubString s, char starting_character, int string_number) throws OverwriteEdgeException {
+		if(this.out_edges.containsKey(starting_character)) {
 			throw new OverwriteEdgeException(s);
 		}else {
 			Node leaf = new Node(NodeType.LEAF, this, s, string_number);
 			Edge edge = new Edge(s, leaf, s.length());
-			this.out_edges.put(s.charAt(0), edge);
+			this.out_edges.put(starting_character, edge);
 			return leaf;
 		}
 	}

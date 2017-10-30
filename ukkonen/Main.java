@@ -25,8 +25,9 @@ public class Main {
 			proteins.add(protein);
 		}*/
 		List<String> proteins = new ArrayList<String>();
-		proteins.add("babxba$");
-		proteins.add("xabxa$");
+		proteins.add("MAPNTDIGLIGLAVMGKNLVLNMVDHGFSVSVYNRSPAKTEEFLKDHGESGALQGFTTIQ$");
+		proteins.add("EFVQSLKRPRKIMIMIKAGAPVDEMIASLLPFLEEGDILIDGGNSYYLDSEQRYVDLKKE$");
+		//proteins.add("GILFVGMGVSGGEEGARKGPSIMPGGNIDAWPAIAPIFQSIAAQVDGRPCCSWIGTGGIQ$");
 		ImplicitSuffixTree tree = null;
 		TrickThreeCounter trick_three_counter = new TrickThreeCounter(1);
 		try {
@@ -41,6 +42,15 @@ public class Main {
 		int i = 1;
 		while(protein_iter.hasNext()) {
 			addToTree(tree, (String) protein_iter.next(), i);
+			i++;
+		}
+		 i = 0;
+		for(String s : proteins) {
+			if(tree.validate(s, i)) {
+				System.out.println("Passed validation for: " + s);
+			}else {
+				System.out.println("Failed validation for: " + s);
+			}
 			i++;
 		}
 		System.out.println(getTreeString(tree));
@@ -95,7 +105,7 @@ public class Main {
 				start_phase  = matchStringAgainstTree(tree, s);
 			}else {
 				try {
-					tree.getRoot().add_leaf(new SubString(s, 0, trick_three_counter), string_number);
+					tree.getRoot().add_leaf(new SubString(s, 0, trick_three_counter), s.charAt(0), string_number);
 				} catch (OverwriteEdgeException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -104,7 +114,7 @@ public class Main {
 			}
 		}
 				int length = s.length();
-		System.out.println(getTreeString(tree));
+		//System.out.println(getTreeString(tree));
 		PathEnd x_alpha_end = null;
 		String gamma;
 		if(string_number == 0) {
@@ -121,7 +131,6 @@ public class Main {
 				System.out.println("Hello");
 			}
 			tree.clearSuffixLinkSetup();
-			trick_three_counter.setCounter(i + 1);
 			char next_char = s.charAt(i);
 			int j;
 			if(string_number != 0)
@@ -138,7 +147,7 @@ public class Main {
 			 */
 			for(j = start_extension_number; j < i + 1; j++) {
 				String alpha = s.substring(j, i);
-				if(string_number != 0 && alpha.equals("abx") && next_char == 'a') {
+				if(string_number != 0 && alpha.equals("E") && next_char == 'F') {
 					System.out.println("equals");
 				}
 				System.out.println(alpha);
@@ -148,7 +157,7 @@ public class Main {
 					if(!tree.getRoot().hasOutEdgeStartsWith(next_char)) {
 						no_suffix_traversal = false;
 						try {
-							x_alpha_end = new PathEnd(tree.getRoot().add_leaf(new SubString(s, i, trick_three_counter), string_number));
+							x_alpha_end = new PathEnd(tree.getRoot().add_leaf(new SubString(s, i, trick_three_counter), next_char, string_number));
 						} catch (OverwriteEdgeException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -315,8 +324,10 @@ public class Main {
 				}
 			}
 			System.out.println("I " + Integer.toString(i + 1));
-			System.out.println(getTreeString(tree));
+			//System.out.println(getTreeString(tree));
 			start_extension_number = j;
+			trick_three_counter.setCounter(i + 1);
+
 		}
 		for(int j = 1; j < length; j++) {
 			System.out.println("going to root at: " + s.substring(j));
@@ -342,7 +353,7 @@ public class Main {
 			for(Integer i : parent.getStrings_from()) {
 				leaf_origins += " " + i.toString() + ",";
 			}
-			System.out.println("Node: L" + parent_name + " from these strings:" + leaf_origins);
+		//	System.out.println("Node: L" + parent_name + " from these strings:" + leaf_origins);
 		}
 		for(Edge edge : parent.getOutEdges().values()) {
 			Node child = edge.child_node;
